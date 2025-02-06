@@ -58,7 +58,7 @@ jobs:
       - name: Build Unity Plugin
         run: |
           export PATH="$HOME/sandbox/bin:$PATH"
-          PKG_CONFIG_PATH=./vlc-android/libvlcjni/libvlc/jni/pkgconfig/${{ matrix.ANDROID_ABI }} meson setup --cross-file=cross/android-${{ matrix.ANDROID_ABI }}-ndk25.txt build_android_${{ matrix.ANDROID_ABI }} --buildtype release
+          PKG_CONFIG_PATH=./vlc-android/libvlc/jni/pkgconfig/${{ matrix.ANDROID_ABI }} meson setup --cross-file=cross/android-${{ matrix.ANDROID_ABI }}-ndk25.txt build_android_${{ matrix.ANDROID_ABI }} --buildtype release
           ninja -C build_android_${{ matrix.ANDROID_ABI }}
       - name: Upload Unity Plugin Artifacts
         uses: actions/upload-artifact@v4
