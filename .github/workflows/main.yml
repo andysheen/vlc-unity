@@ -112,4 +112,67 @@ jobs:
         with:
           name: libvlcsharp-${{ matrix.variant }}
           path: nightlies
+  
+  build-libvlc-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        ARCH: [x86_64, aarch64]
+    env:
+      ARGS: -i z -c -g l
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Build VLC for macOS
+        run: |
+          git clone https://code.videolan.org/videolan/vlc
+          cd vlc
+          mkdir build && cd build
+          ../extras/package/macosx/build.sh ${ARGS} -a ${{ matrix.ARCH }}
+          # Remove symbolic link files
+          rm -rf macos-install/lib/libvlc.dylib
+          rm -rf macos-install/lib/libvlccore.dylib
+          mv macos-install/lib/libvlc.12.dylib macos-install/lib/libvlc.dylib
+          mv macos-install/lib/libvlccore.9.dylib macos-install/lib/libvlccore.dylib
+      - name: Upload macOS libvlc artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libvlc-macos-${{ matrix.ARCH }}
+          path: |
+            vlc/build/macos-install/include/*
+            vlc/build/macos-install/libexec/*
+            vlc/build/macos-install/lib/pkgconfig/*
+            vlc/build/macos-install/lib/vlc/**/*.dylib
+            vlc/build/macos-install/lib/libvlc.dylib
+            vlc/build/macos-install/lib/libvlccore.dylib
+
+  build-unity-plugin-macos:
+    runs-on: macos-latest
+    needs: build-libvlc-macos
+    strategy:
+      matrix:
+        ARCH: [x86_64, aarch64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Download macOS libvlc artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: libvlc-macos-${{ matrix.ARCH }}
+          path: vlc
+      - name: Build Unity Plugin for macOS
+        run: |
+          cd vlc/build/macos-install
+          sed -i '' "1s|.*|prefix=$(pwd | sed 's#/#\\\/#g')|" lib/pkgconfig/libvlc.pc
+          export PATH="$HOME/sandbox/bin:$PATH"
+          cd ../../..
+          PKG_CONFIG_PATH=./vlc/build/macos-install/lib/pkgconfig meson setup build_${{ matrix.ARCH }} --buildtype release
+          ninja -C build_${{ matrix.ARCH }}
+          mv "build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.1.dylib" "build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.dylib"
+          install_name_tool -add_rpath @loader_path/ build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.dylib
+      - name: Upload Unity Plugin macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-plugin-macos-${{ matrix.ARCH }}
+          path: build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.dylib
 
