@@ -65,3 +65,51 @@ jobs:
             build_android_${{ matrix.ANDROID_ABI }}/PluginSource/libVLCUnityPlugin.so
             vlc-android/libvlcjni/libvlc/jni/libs/${{ matrix.ANDROID_ABI }}/libvlc.so
             vlc-android/libvlcjni/libvlc/jni/libs/${{ matrix.ANDROID_ABI }}/libc++_shared.so
+
+  build-libvlcsharp:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.videolan.org/vlc-debian-unstable:20240402131352
+      options: --user root
+    strategy:
+      matrix:
+        variant: [unity_all]
+    env:
+      DOTNET_SDK_URL: https://download.visualstudio.microsoft.com/download/pr/db901b0a-3144-4d07-b8ab-6e7a43e7a791/4d9d1b39b879ad969c6c0ceb6d052381/dotnet-sdk-8.0.401-linux-x64.tar.gz
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download .NET SDK
+        run: |
+          wget $DOTNET_SDK_URL -O dotnet-sdk.tar.gz
+          mkdir -p $HOME/dotnet && tar zxf dotnet-sdk.tar.gz -C $HOME/dotnet
+          echo "DOTNET_ROOT=$HOME/dotnet" >> $GITHUB_ENV
+          echo "$HOME/dotnet" >> $GITHUB_PATH
+
+      - name: Clone LibVLCSharp and Build
+        run: |
+          mkdir tmp && cd tmp
+          git clone https://code.videolan.org/videolan/LibVLCSharp lvs
+          cd lvs
+          git checkout -f master
+          if [ "${{ matrix.variant }}" = "unity_all" ]; then
+            ARGS="/p:UNITY=true"
+          elif [ "${{ matrix.variant }}" = "unity_ios" ]; then
+            ARGS="/p:UNITY_IOS=true"
+          else
+            ARGS=""
+          fi
+          dotnet build src/LibVLCSharp/LibVLCSharp.csproj $ARGS -c Release
+
+      - name: Copy Build Output
+        run: |
+          mkdir -p nightlies
+          cp -r tmp/lvs/src/LibVLCSharp/bin/Release/netstandard2.0 nightlies
+
+      - name: Upload LibVLCSharp Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libvlcsharp-${{ matrix.variant }}
+          path: nightlies
+
