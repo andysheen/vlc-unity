@@ -33,10 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: libvlc-android-${{ matrix.ANDROID_ABI }}
-          path: |
-            vlc-android/libvlcjni/libvlc/jni
-            vlc-android/libvlcjni/vlc/include
-            vlc-android/libvlcjni/libvlc/build/intermediates/aar_main_jar/release/classes.jar
+          path: vlc-android/**
 
   build-unity-plugin-android:
     runs-on: ubuntu-latest
@@ -58,7 +55,7 @@ jobs:
       - name: Build Unity Plugin
         run: |
           export PATH="$HOME/sandbox/bin:$PATH"
-          PKG_CONFIG_PATH=./vlc-android/libvlc/jni/pkgconfig/${{ matrix.ANDROID_ABI }} meson setup --cross-file=cross/android-${{ matrix.ANDROID_ABI }}-ndk25.txt build_android_${{ matrix.ANDROID_ABI }} --buildtype release
+          PKG_CONFIG_PATH=./vlc-android/libvlcjni/libvlc/jni/pkgconfig/${{ matrix.ANDROID_ABI }} meson setup --cross-file=cross/android-${{ matrix.ANDROID_ABI }}-ndk25.txt build_android_${{ matrix.ANDROID_ABI }} --buildtype release
           ninja -C build_android_${{ matrix.ANDROID_ABI }}
       - name: Upload Unity Plugin Artifacts
         uses: actions/upload-artifact@v4
