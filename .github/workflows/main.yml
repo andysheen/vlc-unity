@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ANDROID_ABI: [armeabi-v7a]
+        ANDROID_ABI: [armeabi-v7a, arm64-v8a]
     container:
       image: registry.videolan.org/vlc-debian-android:20241118101328
       options: --user root
@@ -40,7 +40,7 @@ jobs:
     needs: build-libvlc-android
     strategy:
       matrix:
-        ANDROID_ABI: [armeabi-v7a]
+        ANDROID_ABI: [armeabi-v7a, arm64-v8a]
     container:
       image: registry.videolan.org/vlc-debian-android:20241118101328
       options: --user root
