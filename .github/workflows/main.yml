@@ -16,8 +16,8 @@ jobs:
       matrix:
         ANDROID_ABI: [armeabi-v7a]
     container:
-    
       image: registry.videolan.org/vlc-debian-android:20240723100046
+      options: --user root
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -46,6 +46,7 @@ jobs:
         ANDROID_ABI: [armeabi-v7a]
     container:
       image: registry.videolan.org/vlc-debian-android:20240723100046
+      options: --user root
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
