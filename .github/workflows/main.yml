@@ -16,7 +16,7 @@ jobs:
       matrix:
         ANDROID_ABI: [armeabi-v7a, arm64-v8a, x86, x86_64]
     container:
-      image: ${{}}
+      image: https://code.videolan.org/videolan/docker-images/-/tree/master/vlc-debian-android
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
       matrix:
         ANDROID_ABI: [armeabi-v7a, arm64-v8a, x86, x86_64]
     container:
-      image: ${{}}
+      image: https://code.videolan.org/videolan/docker-images/-/tree/master/vlc-debian-android
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
