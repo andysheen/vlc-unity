@@ -123,6 +123,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Build VLC for macOS
+        env:
+          BLURAY_CONF: --disable-bdjava-jar
+          JAVAC: no
+          ANT: no
         run: |
           git clone https://code.videolan.org/videolan/vlc
           cd vlc
