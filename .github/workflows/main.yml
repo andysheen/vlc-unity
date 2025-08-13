@@ -16,7 +16,7 @@ jobs:
       matrix:
         ANDROID_ABI: [armeabi-v7a, arm64-v8a]
     container:
-      image: registry.videolan.org/vlc-debian-android:20241118101328
+      image: registry.videolan.org/vlc-debian-android:20250626142950
       options: --user root
     steps:
       - name: Checkout repository
@@ -26,7 +26,6 @@ jobs:
           git clone https://code.videolan.org/videolan/vlc-android && cd vlc-android
           git clone https://code.videolan.org/videolan/libvlcjni && cd libvlcjni
           git clone https://code.videolan.org/videolan/vlc/ --depth=1
-          git apply ../../patches/no-libvlcjni-build.patch
           cd ..
           ANDROID_HOME=/sdk/android-sdk-linux ./buildsystem/compile.sh -l -b -r -a ${{ matrix.ANDROID_ABI }}
       - name: Upload Artifacts
