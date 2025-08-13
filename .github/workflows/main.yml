@@ -117,7 +117,8 @@ jobs:
     strategy:
       matrix:
         ARCH: [aarch64]
-    env:
+    env:    
+      BLURAY_CONF: --disable-bdjava-jar
       ARGS: -i z -c -g l
     steps:
       - name: Checkout repository
@@ -131,8 +132,8 @@ jobs:
           # Remove symbolic link files
           rm -rf macos-install/lib/libvlc.dylib
           rm -rf macos-install/lib/libvlccore.dylib
-          mv macos-install/lib/libvlc.12.dylib macos-install/lib/libvlc.dylib
-          mv macos-install/lib/libvlccore.9.dylib macos-install/lib/libvlccore.dylib
+          cp "$(ls macos-install/lib/libvlc.*.dylib | head -n 1)" macos-install/lib/libvlc.dylib
+          cp "$(ls macos-install/lib/libvlccore.*.dylib | head -n 1)" macos-install/lib/libvlccore.dylib
       - name: Upload macOS libvlc artifacts
         uses: actions/upload-artifact@v4
         with:
