@@ -138,8 +138,18 @@ jobs:
         with:
           distribution: zulu
           java-version: '8'
-      - name: Build VLC for macOS
+
+    # Provide system tools so VLC doesn't build extras/tools (cmake, ninja, etc.)
+      - name: Install build tools (Homebrew)
         run: |
+          brew update
+          brew install cmake ninja ant pkg-config autoconf automake libtool nasm yasm
+      - name: Build VLC for macOS
+        env:
+        # Make sure the system tools are preferred
+          PATH: /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+        run: |
+          set -euo pipefail
           git clone https://code.videolan.org/videolan/vlc
           cd vlc
           export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '/java' | grep -v '/jdk' | tr '\n' ':')
