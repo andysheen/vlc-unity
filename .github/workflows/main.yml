@@ -123,11 +123,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Build VLC for macOS
-        env:
-          BLURAY_CONF: --disable-bdjava-jar
         run: |
           git clone https://code.videolan.org/videolan/vlc
           cd vlc
+          printf 'BLURAY_CONF += --disable-bdjava-jar\n' > contrib/config.mak
           mkdir build && cd build
           ../extras/package/macosx/build.sh ${ARGS} -a ${{ matrix.ARCH }}
           # Remove symbolic link files
