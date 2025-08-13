@@ -146,11 +146,8 @@ jobs:
 
     # Provide system tools so VLC doesn't build extras/tools (cmake, ninja, etc.)
       - name: Install build tools (Homebrew)
-        env:
         # Make sure the system tools are preferred
-          PATH: /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
         run: |
-          set -euo pipefail
           brew update
           brew install cmake ninja ant pkg-config autoconf automake libtool nasm yasm
       - name: Build VLC for macOS
@@ -161,7 +158,9 @@ jobs:
           set -euo pipefail
           git clone https://code.videolan.org/videolan/vlc
           cd vlc
-          export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '/java' | grep -v '/jdk' | tr '\n' ':')
+          git fetch --all --tags
+          git checkout -f origin/3.0.x
+          printf 'BLURAY_CONF += --disable-bdjava-jar\n' > contrib/config.mak
           mkdir build && cd build
           ../extras/package/macosx/build.sh ${ARGS} -a ${{ matrix.ARCH }}
           rm -f macos-install/lib/libvlc.dylib macos-install/lib/libvlccore.dylib
