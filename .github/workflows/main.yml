@@ -137,7 +137,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: '8.0.392+8'
       - name: Build VLC for macOS
         run: |
           git clone https://code.videolan.org/videolan/vlc
