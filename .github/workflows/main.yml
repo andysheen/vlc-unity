@@ -122,6 +122,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - name: Use Java 8 for BD-J build
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
       - name: Build VLC for macOS
         run: |
           git clone https://code.videolan.org/videolan/vlc
