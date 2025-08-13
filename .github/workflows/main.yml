@@ -150,7 +150,7 @@ jobs:
     needs: build-libvlc-macos
     strategy:
       matrix:
-        ARCH: [x86_64, aarch64]
+        ARCH: [aarch64]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
