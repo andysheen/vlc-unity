@@ -129,7 +129,7 @@ jobs:
       matrix:
         ARCH: [aarch64]
     env:    
-      ARGS: -i z -c -g l
+      ARGS: -c
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
