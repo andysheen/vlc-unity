@@ -118,12 +118,13 @@ jobs:
       matrix:
         ARCH: [aarch64]
     env:    
-      BLURAY_CONF: --disable-bdjava-jar
       ARGS: -i z -c -g l
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Build VLC for macOS
+        env:
+          BLURAY_CONF: --disable-bdjava-jar
         run: |
           git clone https://code.videolan.org/videolan/vlc
           cd vlc
