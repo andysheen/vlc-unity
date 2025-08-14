@@ -1,0 +1,104 @@
+name: macOS libVLC + Unity (minimal)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-libvlc-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        ARCH: [aarch64]     # add x86_64 if you want both
+    env:
+      ARGS: -i z -c -g l    # your existing VLC build args
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # JDK 8 so libbluray's BD-J JAR compiles (no -source 5 error)
+      - name: Use Java 8 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '8'
+
+      # Provide system tools so VLC doesn't try to build extras/tools
+      - name: Install build deps (Homebrew)
+        run: |
+          brew update
+          brew install cmake ninja meson pkg-config ant automake autoconf libtool nasm yasm gettext gnu-sed
+
+      # Clone VLC and explicitly mark extras/tools as already built
+      - name: Clone VLC and skip extras/tools
+        run: |
+          set -euo pipefail
+          git clone https://code.videolan.org/videolan/vlc
+          cd vlc
+          mkdir -p extras/tools
+          # markers used by the tools makefile; safe if some aren't checked
+          touch extras/tools/.builddone extras/tools/.buildcmake extras/tools/.buildninja extras/tools/.buildmeson
+
+      - name: Build VLC (macOS)
+        env:
+          PATH: /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+        run: |
+          set -euxo pipefail
+          cd vlc
+          mkdir -p build && cd build
+          ../extras/package/macosx/build.sh ${ARGS} -a ${{ matrix.ARCH }} \
+          || { echo "=== LOGS (contrib) ==="; find .. -name "*.log" -maxdepth 6 -print -exec tail -n +200 {} \; ; exit 1; }
+
+          # normalize dylib names (version -> unversioned)
+          rm -f macos-install/lib/libvlc.dylib  macos-install/lib/libvlccore.dylib
+          cp "$(ls macos-install/lib/libvlc.*.dylib | head -n 1)"      macos-install/lib/libvlc.dylib
+          cp "$(ls macos-install/lib/libvlccore.*.dylib | head -n 1)" macos-install/lib/libvlccore.dylib
+
+      - name: Upload libVLC artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libvlc-macos-${{ matrix.ARCH }}
+          path: |
+            vlc/build/macos-install/include/*
+            vlc/build/macos-install/libexec/*
+            vlc/build/macos-install/lib/pkgconfig/*
+            vlc/build/macos-install/lib/vlc/**/*.dylib
+            vlc/build/macos-install/lib/libvlc.dylib
+            vlc/build/macos-install/lib/libvlccore.dylib
+
+  build-unity-plugin-macos:
+    runs-on: macos-latest
+    needs: build-libvlc-macos
+    strategy:
+      matrix:
+        ARCH: [aarch64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download macOS libVLC artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: libvlc-macos-${{ matrix.ARCH }}
+          path: vlc
+
+      - name: Build Unity Plugin
+        run: |
+          set -euxo pipefail
+          cd vlc/build/macos-install
+          # fix prefix in libvlc.pc to this absolute path
+          sed -i '' "1s|.*|prefix=$(pwd | sed 's#/#\\\/#g')|" lib/pkgconfig/libvlc.pc
+          export PATH="$HOME/sandbox/bin:$PATH"
+          cd ../../..
+          PKG_CONFIG_PATH=./vlc/build/macos-install/lib/pkgconfig \
+            meson setup build_${{ matrix.ARCH }} --buildtype release
+          ninja -C build_${{ matrix.ARCH }}
+          mv "build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.1.dylib" \
+             "build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.dylib"
+          install_name_tool -add_rpath @loader_path/ \
+             build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.dylib
+
+      - name: Upload Unity Plugin dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-plugin-macos-${{ matrix.ARCH }}
+          path: build_${{ matrix.ARCH }}/PluginSource/libVLCUnityPlugin.dylib
