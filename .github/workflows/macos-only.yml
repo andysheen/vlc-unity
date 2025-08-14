@@ -1,4 +1,4 @@
-name: macOS libVLC (debug tools)
+name: macOS libVLC (stable, no-tools)
 
 on:
   workflow_dispatch:
@@ -7,52 +7,52 @@ jobs:
   build-libvlc-macos:
     runs-on: macos-latest
     strategy:
-      matrix:
-        ARCH: [aarch64]
+      matrix: { ARCH: [aarch64] }   # add x86_64 if needed
     env:
       ARGS: -i z -c -g l
     steps:
       - uses: actions/checkout@v4
 
+      # Use Java 8 so libbluray BD-J compiles cleanly
       - name: Use Java 8 (Zulu)
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: '8'
 
+      # Provide system tools so we can skip extras/tools entirely
       - name: Install build deps (Homebrew)
         run: |
           brew update
           brew install cmake ninja meson pkg-config ant automake autoconf libtool nasm yasm gettext gnu-sed
 
-      - name: Clone VLC
-        run: |
-          set -euo pipefail
-          git clone https://code.videolan.org/videolan/vlc
-          cd vlc
-          # (Optional) pin to a known-good tag while debugging:
-          # git checkout 3.0.21-1
-          printf 'BLURAY_CONF += --disable-bdjava-jar\n' > contrib/config.mak
-
-      - name: Build extras/tools (verbose, single job)
+      - name: Clone VLC (pin to stable tag)
         run: |
           set -euxo pipefail
-          cd vlc/extras/tools
-          ./bootstrap
-          # single-threaded to make the failing step obvious
-          make V=1 -j1 2>&1 | tee ../../tools_build.log
+          git clone https://code.videolan.org/videolan/vlc
+          cd vlc
+          git fetch --tags
+          # Pick a stable 3.0.x tag (adjust if you prefer another)
+          git checkout 3.0.21
+
+          # Pretend extras/tools already built so build.sh won't redo them
+          mkdir -p extras/tools
+          touch extras/tools/.builddone extras/tools/.buildcmake extras/tools/.buildninja extras/tools/.buildmeson
 
       - name: Build VLC (macOS)
         env:
           PATH: /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+          CC: clang
+          CXX: clang++
+          MAKEFLAGS: -j1            # avoid jobserver quirks in CI
         run: |
           set -euxo pipefail
           cd vlc
           mkdir -p build && cd build
           ../extras/package/macosx/build.sh ${ARGS} -a ${{ matrix.ARCH }} \
-          || { echo "=== LOGS (searching) ==="; find .. -name "*.log" -maxdepth 6 -print -exec tail -n +1 {} \; ; exit 1; }
+          || { echo "=== LOGS ==="; find .. -name "*.log" -maxdepth 6 -print -exec tail -n +1 {} \; ; exit 1; }
 
-          # normalize dylib names
+          # normalize dylib names (version -> unversioned)
           rm -f macos-install/lib/libvlc.dylib  macos-install/lib/libvlccore.dylib
           cp "$(ls macos-install/lib/libvlc.*.dylib | head -n 1)"      macos-install/lib/libvlc.dylib
           cp "$(ls macos-install/lib/libvlccore.*.dylib | head -n 1)" macos-install/lib/libvlccore.dylib
