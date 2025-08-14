@@ -7,9 +7,10 @@ jobs:
   build-libvlc-macos:
     runs-on: macos-latest
     strategy:
-      matrix: { ARCH: [aarch64] }   # add x86_64 if needed
+      matrix:
+        ARCH: [aarch64] # Add x86_64 if you need Intel builds too
     env:
-      ARGS: -i z -c -g l
+      ARGS: -c # Just rebuild contribs and VLC (no invalid flags)
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +21,7 @@ jobs:
           distribution: zulu
           java-version: '8'
 
-      # Provide system tools so we can skip extras/tools entirely
+      # Install system dependencies so we can skip extras/tools entirely
       - name: Install build deps (Homebrew)
         run: |
           brew update
@@ -32,7 +33,7 @@ jobs:
           git clone https://code.videolan.org/videolan/vlc
           cd vlc
           git fetch --tags
-          # Pick a stable 3.0.x tag (adjust if you prefer another)
+          # Pick a stable VLC 3.0.x tag
           git checkout 3.0.21
 
           # Pretend extras/tools already built so build.sh won't redo them
@@ -44,7 +45,7 @@ jobs:
           PATH: /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
           CC: clang
           CXX: clang++
-          MAKEFLAGS: -j1            # avoid jobserver quirks in CI
+          MAKEFLAGS: -j1 # Avoid jobserver quirks in GitHub Actions
         run: |
           set -euxo pipefail
           cd vlc
@@ -52,8 +53,8 @@ jobs:
           ../extras/package/macosx/build.sh ${ARGS} -a ${{ matrix.ARCH }} \
           || { echo "=== LOGS ==="; find .. -name "*.log" -maxdepth 6 -print -exec tail -n +1 {} \; ; exit 1; }
 
-          # normalize dylib names (version -> unversioned)
-          rm -f macos-install/lib/libvlc.dylib  macos-install/lib/libvlccore.dylib
+          # Normalize dylib names (remove version suffixes)
+          rm -f macos-install/lib/libvlc.dylib macos-install/lib/libvlccore.dylib
           cp "$(ls macos-install/lib/libvlc.*.dylib | head -n 1)"      macos-install/lib/libvlc.dylib
           cp "$(ls macos-install/lib/libvlccore.*.dylib | head -n 1)" macos-install/lib/libvlccore.dylib
 
